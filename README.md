@@ -1,5 +1,5 @@
 # MARKUPEX
-Source codes for the paper *On a Pecuniary Externality of Competitive Banking through Goods Pricing Dispersion* by Timothy **Kam**, Hyungsuk **Lee**, Junsang **Lee**, Ieng Man (Sam) **Ng**.
+Source codes for the paper [*On a Pecuniary Externality of Competitive Banking through Goods Pricing Dispersion*](https://github.com/phantomachine/MARKUPEX/blob/main/main.pdf) by Timothy **Kam**, Hyungsuk **Lee**, Junsang **Lee**, Ieng Man (Sam) **Ng**.
 
 There are two sets of programs. 
 
