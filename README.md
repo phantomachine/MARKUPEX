@@ -35,13 +35,13 @@ The empirical analysis is supported by four `STATA` `.do` files, each serving a 
 
 1. `Table 1, 4, 5, and 6.do`
 
-  This script conducts the empirical analysis on the relationship between credit and markup (and its dispersion). It generates:
-  
-  * Table 1: OLS results: Markup and dispersion (Section 4.2 Empirical evidence)
-  
-  * Tables 4, 5, and 6 in Appendix D Robustness
+    This script conducts the empirical analysis on the relationship between credit and markup (and its dispersion). It generates:
+    
+    * Table 1: OLS results: Markup and dispersion (Section 4.2 Empirical evidence)
+    
+    * Tables 4, 5, and 6 in Appendix D Robustness
 
-  The tables are output in $\LaTeX$ format.
+    The tables are output in $\LaTeX$ format.
 
 2. `Table 3.do`
 
