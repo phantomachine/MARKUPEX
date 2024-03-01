@@ -54,7 +54,7 @@ The empirical analysis is supported by four `STATA` `.do` files, each serving a 
     * Credit and average markup
 
     * Credit and markups dispersion
-    
+
     * Average markup and the effective Federal Funds rate
 
 #### 4. `Appendix VECM_Equation_D2_D3.do`
@@ -79,13 +79,16 @@ To run any of the `.do` files, navigate to the directory containing the files an
 
 * `bcw_bj.py`: Baseline model primitives and equilibrium solver
     * A monetary model **with** banks 
-    * Model setup: Berentsen, Camera and Waller (JET, 2007) with Head, Liu, Menzio and Wright (JEEA, 2012)
+    * Model setup combines and encompasses two important limits: 
+    
+      * [Berentsen, Camera and Waller (*J. Econ. Theory*, 2007)](https://doi.org/10.1016/j.jet.2006.03.016) 
+      * [Head, Liu, Menzio and Wright (*J. Eur. Econ. Assoc.*, 2012)](https://www.jstor.org/stable/23251208)
 
 * `klln_baseline_calibration.py`: Use for calibration  
 
 * `hlmw.py`: Model primitives and equilibrium solver
     * A monetary model **without** banks
-    * Model setup: Head, Liu, Menzio and Wright (JEEA, 2012)
+    * Model setup: [Head, Liu, Menzio and Wright (*J. Eur. Econ. Assoc.*, 2012)](https://www.jstor.org/stable/23251208)
     
 ## Data file
 
