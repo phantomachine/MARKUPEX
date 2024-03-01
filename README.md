@@ -45,15 +45,17 @@ The empirical analysis is supported by four `STATA` `.do` files, each serving a 
 
 2. `Table 3.do`
 
-  Generates Table 3: Data sources and summary statistics, providing an overview of the data utilized in our analysis.
+    Generates Table 3: Data sources and summary statistics, providing an overview of the data utilized in our analysis.
 
 3. `Figure 6.do`
 
-  Produces Figure 6: Time series of credit-to-GDP ratio and markup statistics for Section 4.2 Empirical evidence. It creates three figures illustrating:
-  
-  * Credit and average markup
-  * Credit and markups dispersion
-  * Average markup and the effective Federal Funds rate
+    Produces Figure 6: Time series of credit-to-GDP ratio and markup statistics for Section 4.2 Empirical evidence. It creates three figures illustrating:
+    
+    * Credit and average markup
+
+    * Credit and markups dispersion
+    
+    * Average markup and the effective Federal Funds rate
 
 #### 4. `Appendix VECM_Equation_D2_D3.do`
 
