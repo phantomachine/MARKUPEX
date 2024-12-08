@@ -24,6 +24,9 @@ Dependencies:
 * `calibration.ipynb`
 * This file documents the calibration of the model parameter
 
+### Robustness checks ($\sigma$, $\alpha_{1}$)
+* See the directory ``Robustness``
+
 ## Empirical analysis 
 This documentation covers the empirical analysis conducted for the study of the relationship between credit and markup (and its dispersion) in the United States from 1980 to 2007. The analysis utilizes `STATA` for generating tables and figures as per the findings discussed in our paper.
 
