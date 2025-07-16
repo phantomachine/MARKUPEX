@@ -3,7 +3,7 @@ Source codes for the paper [*On a Pecuniary Externality of Competitive Banking t
 
 There are two sets of programs. 
 
-* Model analyses are done using ``Python``. See directory `model`.
+* Model calibration and analyses are done using ``Python``. See directory `model`.
 
 * Empirical work is done in `STATA`. See directory `empirics`.
 
@@ -24,10 +24,7 @@ Dependencies:
 * `calibration.ipynb`
 * This file documents the calibration of the model parameter
 
-### Robustness checks ($\sigma$, $\alpha_{1}$)
-* See the directory ``Robustness``
-
-## Empirical analysis 
+## Empirical analysis (Deprecated - not included in the final paper)
 This documentation covers the empirical analysis conducted for the study of the relationship between credit and markup (and its dispersion) in the United States from 1980 to 2007. The analysis utilizes `STATA` for generating tables and figures as per the findings discussed in our paper.
 
 ### Data description
@@ -80,14 +77,14 @@ To run any of the `.do` files, navigate to the directory containing the files an
 
 ## Numerical example
 
-* `bcw_bj.py`: Baseline model primitives and equilibrium solver
+* `bj_bcw.py`: Baseline model primitives and equilibrium solver
     * A monetary model **with** banks 
     * Model setup combines and encompasses two important limits: 
     
       * [Berentsen, Camera and Waller (*J. Econ. Theory*, 2007)](https://doi.org/10.1016/j.jet.2006.03.016) 
       * [Head, Liu, Menzio and Wright (*J. Eur. Econ. Assoc.*, 2012)](https://www.jstor.org/stable/23251208)
 
-* `klln_baseline_calibration.py`: Use for calibration  
+* `calibration.ipynb`: Use for calibration  
 
 * `hlmw.py`: Model primitives and equilibrium solver
     * A monetary model **without** banks

@@ -20,7 +20,7 @@ class hlmw_mod(object):
                  Abar = 1.0, Ubar_CM = 1.0, Ubar_DM = 1.0, 
                  c = 1.0, τ_b = 0.0, τ_max = 0.1, τgrid_size = 120,
                  z_min = 1e-2, z_max = 1.0, zgrid_size = 120, 
-                 N_reimann = 500, Tol=1e-12, N_local = 20,τ_min=0,
+                 N_reimann = 1000, Tol=1e-12, N_local = 20,τ_min=0.01,
                  α_1=0.3,n=0.8
                 ):
         #Model parameters
@@ -194,7 +194,7 @@ class hlmw_mod(object):
             MU = self.Ubar_CM / x
         else: 
             MU = x**( -self.σ_CM )
-        return MU
+        return self.Ubar_CM*MU
     
     def invU_C_CM(self, marginal_value):
         """Inverse of dU/dx function, Uprime of CM good"""
@@ -224,7 +224,7 @@ class hlmw_mod(object):
             mu = 1.0 / q
         else:
             mu = q**( -self.σ_DM )
-        return mu    
+        return self.Ubar_DM*mu    
     
     def invu_q_DM(self, marginal_value):
         """Inverse of du/dq function, Uprime of DM good"""
@@ -235,7 +235,7 @@ class hlmw_mod(object):
         cost = q
         return cost
     
-    def invcost_DM(self, q):
+    def invcost_DM(self, ):
         """Inverse of DM production function - output in DM q 
         associated with given level of cost"""
         q = self.c
@@ -335,51 +335,54 @@ class hlmw_mod(object):
         return ρq
         
     ##-----------------bounds on DM goods prices------------##
-    def ρ_max_func(self, z):
+    def ρ_max_func(self, z, τ):
         """Equilibrium upper bound on the support of F: ρ_{\max}"""
-        
-        ρ_hat = self.ρ_hat_func(z)
-        ρ_constant = self.c / (1.0 - self.σ_DM)
-        ρ_ub = np.max( [ ρ_hat, ρ_constant ] ) #monopoly price in general
-        
-        #Note: Case 1: ρ_ub = ρ_hat implies all liquidity constrained
-        #Note: Case 2: ρ_ub = ρ_constant implies mixture of liquidity constrained and unconstrained
-        
+        if τ > self.β-1.0:
+            ρ_hat = self.ρ_hat_func(z)
+            ρ_constant = self.c / (1.0 - self.σ_DM)
+            ρ_ub = np.max( [ ρ_hat, ρ_constant ] ) #monopoly price in general
+
+            #Note: Case 1: ρ_ub = ρ_hat implies all liquidity constrained
+            #Note: Case 2: ρ_ub = ρ_constant implies mixture of liquidity constrained and unconstrained
+        else:
+            ρ_ub = self.c
         return ρ_ub
     
     def ρ_min_func(self, z, τ):
         """Equal expected profit condition to back out the lower bound
         on the support of F given R(ρ_{\max})
         """ 
-    
-        ρ_max = self.ρ_max_func(z)
-                
-        ρ_range= np.linspace(self.c, ρ_max, self.N_reimann)  
-        
-        ## Temporarily, start by setting rho_max and begin with c at the minimum.
-        
-        Rex = self.R_ex(ρ_range, z)
-        
-        R_grid,R_fit=self.R(ρ_range, Rex, DropFakes=True)
-        
-        noisy_search = self.α_1  / ( self.α_1 + 2.0 * self.α_2 ) 
+        if τ > self.β - 1.0:
+            ρ_max = self.ρ_max_func(z, τ)
 
-        LHS = lambda ρ: self.q_demand_func(ρ, z) * ( ρ - self.c )
+            ρ_range= np.linspace(self.c, ρ_max, self.N_reimann)  
 
-        RHS = noisy_search * R_fit(ρ_max)  
-        
-        vals_obj = lambda ρ: RHS - LHS(ρ)
-        
-        ρ_lb = brentq(vals_obj, self.c, ρ_max)
-       
+            ## Temporarily, start by setting rho_max and begin with c at the minimum.
+
+            Rex = self.R_ex(ρ_range, z)
+
+            R_grid,R_fit=self.R(ρ_range, Rex, DropFakes=True)
+
+            noisy_search = self.α_1  / ( self.α_1 + 2.0 * self.α_2 ) 
+
+            LHS = lambda ρ: self.q_demand_func(ρ, z) * ( ρ - self.c )
+
+            RHS = noisy_search * R_fit(ρ_max)  
+
+            vals_obj = lambda ρ: RHS - LHS(ρ)
+
+            ρ_lb = brentq(vals_obj, self.c, ρ_max)
+            
+        else:
+            ρ_lb = self.c
         return ρ_lb
     
     ##-----------DM goods price distribution: CDF and pdf in terms of aggregate variables-------##
-    def F_func(self, z,τ):
+    def F_func(self, z, τ):
         """Posted price distribution (CDF): F(ρ, z)
         """
         
-        ρ_max = self.ρ_max_func(z)
+        ρ_max = self.ρ_max_func(z, τ)
         
         ρ_range= self.support_grid_func(z, τ)
         
@@ -400,7 +403,7 @@ class hlmw_mod(object):
     def dF_func(self, z,τ):
         """Density of the price distribution (PDF): dF(ρ, z)/dρ"""
         
-        ρ_max = self.ρ_max_func(z)
+        ρ_max = self.ρ_max_func(z, τ)
         
         ρ_range= self.support_grid_func(z, τ)
         
@@ -419,21 +422,22 @@ class hlmw_mod(object):
         pdf_value = noisy_search*( ( R_max / ( R**2.0 ) ) * dR_dρ )
                 
         return pdf_value
-    
+      
     def support_grid_func(self, z, τ):
         a = self.ρ_min_func(z, τ)
-        b = self.ρ_max_func(z)       
+        b = self.ρ_max_func(z, τ)       
         supports = np.linspace(a, b, self.N_reimann)
         return supports
     
     def dF_normalization_func(self, z, τ):
+        
         ρ_grid = self.support_grid_func(z, τ)
         dF = self.dF_func(z, τ)
-        w = ρ_grid[1] - ρ_grid[0]
-        dF_sum = np.sum(w*dF)
-        dF_nor = dF/ dF_sum
-        return dF_nor          
-    
+        width = (ρ_grid[-1]-ρ_grid[0])/(len(ρ_grid)-1)
+        
+        dF_sum = np.sum(width * dF)
+        dF_nor = dF / dF_sum
+        return dF_nor     
     #HS_log 
     # Times measure of active buyers (n)
     
@@ -475,12 +479,7 @@ class hlmw_mod(object):
         return net
     
     def z_solver(self, τ):
-        
-        if τ > self.β - 1.0:
-        
-            z_sol = brentq(self.money_euler_obj, self.z_min, self.z_max, args=(τ))
-        else:
-            z_sol= 1
+        z_sol= brentq(self.money_euler_obj, self.z_min, self.z_max, args=(τ))
         return z_sol
 
 
@@ -492,120 +491,136 @@ class hlmw_mod(object):
     ##------------------SME and Stat---------------------------------##
     def Total_q_func(self, z, τ):
         """Total DM goods"""
+        if τ > self.β-1.0:
+            ρ_grid = self.support_grid_func(z, τ)
 
-        ρ_grid = self.support_grid_func(z, τ)
-        
-        pdf_grid = self.dF_normalization_func(z, τ)
-        
-        em = self.α_1 + 2.0*self.α_2*( 1.0 - self.F_func(z, τ))
-        
-        q_expost = np.array( [self.q_demand_func(ρ, z) for ρ in ρ_grid] )
-        
-        integrand_values = em * q_expost * pdf_grid
-        
-        total_q = self.n*np.trapz(integrand_values, ρ_grid)
-        
+            pdf_grid = self.dF_normalization_func(z, τ)
+
+            em = self.α_1 + 2.0*self.α_2*( 1.0 - self.F_func(z, τ))
+
+            q_expost = np.array( [self.q_demand_func(ρ, z) for ρ in ρ_grid] )
+
+            integrand_values = em * q_expost * pdf_grid
+
+            total_q = self.n*np.trapz(integrand_values, ρ_grid)
+        else:
+            q_FR = z/self.c
+            
+            total_q = self.n*q_FR
         return total_q
     
     def Total_ρq_func(self, z, τ):
         """Total DM expenditure"""        
-        
-        ρ_grid = self.support_grid_func(z, τ)
-        
-        pdf_grid = self.dF_normalization_func(z, τ)
-        
-        em = self.α_1 + 2.0*self.α_2*( 1.0 - self.F_func(z, τ))
-        
-        ρq_expost = np.array( [self.q_expenditure(ρ, z) for ρ in ρ_grid] )
-        
-        integrand_values = em * ρq_expost * pdf_grid
-        
-        total_ρq = self.n*np.trapz(integrand_values, ρ_grid)
-        
+        if τ > self.β-1.0:
+            ρ_grid = self.support_grid_func(z, τ)
+
+            pdf_grid = self.dF_normalization_func(z, τ)
+
+            em = self.α_1 + 2.0*self.α_2*( 1.0 - self.F_func(z, τ))
+
+            ρq_expost = np.array( [self.q_expenditure(ρ, z) for ρ in ρ_grid] )
+
+            integrand_values = em * ρq_expost * pdf_grid
+
+            total_ρq = self.n*np.trapz(integrand_values, ρ_grid)
+        else:
+            q_FR = z/self.c
+            total_ρq = self.n*q_FR*self.c
         return total_ρq    
     
     def firm_profit_func(self, z, τ):
         """Firms' expected transacted profit"""    
-        
-        ρ_grid = self.support_grid_func(z, τ)
-        
-        pdf_grid = self.dF_normalization_func(z, τ)
-        
-        em = self.α_1 + 2.0*self.α_2*( 1.0 - self.F_func(z, τ))
-        
-        ρ_range=self.support_grid_func(z, τ)
-        
-        Rex = self.R_ex(ρ_range, z)
-        
-        R_grid,R_fit=self.R(ρ_range, Rex, DropFakes=True)
-        
-        profit_margin = R_grid
-        
-        integrand_values = em * profit_margin * pdf_grid
-        
-        firm_profit = np.trapz(integrand_values, ρ_grid)   
-        
+        if τ>self.β-1.0:
+            ρ_grid = self.support_grid_func(z, τ)
+
+            pdf_grid =  self.dF_normalization_func(z, τ)
+
+            em = self.α_1 + 2.0*self.α_2*( 1.0 - self.F_func(z, τ))
+
+            ρ_range=self.support_grid_func(z, τ)
+
+            Rex = self.R_ex(ρ_range, z)
+
+            R_grid,R_fit=self.R(ρ_range, Rex, DropFakes=True)
+
+            profit_margin = R_grid
+
+            integrand_values = em * profit_margin * pdf_grid
+
+            firm_profit = np.trapz(integrand_values, ρ_grid)   
+        else:
+            firm_profit = 0.0
         return firm_profit
     
     def markup_func(self, z, τ):
         """Consumption weighted transactred markup"""        
-        ρ_grid = self.support_grid_func(z, τ)
-        
-        pdf_grid = self.dF_normalization_func(z, τ)
-        
-        expost_markup_func = lambda ρ: ρ / self.c
-        
-        markup_expost = np.array([expost_markup_func(ρ) for ρ in ρ_grid])
-        
-        # DM consumption share
-        q_share = self.n* self.Total_q_func(z, τ) / (self.Total_ρq_func(z, τ) + self.x_star)
-        
-        # CM consumption share
-        x_share = self.n* self.x_star / (self.Total_ρq_func(z, τ) + self.x_star)
-        
-        # normalized
-        nor_share = q_share / x_share
-        
-        # dm_consumption_share * dm_markup + cm_consumption_share * cm_markup(=1, CM p=mc) 
-        # normalized by x_share to get consumption weighted markup
-        markup = np.trapz(nor_share * (markup_expost * pdf_grid), ρ_grid) + 1.0
-        
+        if τ>self.β-1.0:
+            ρ_grid = self.support_grid_func(z, τ)
+
+            pdf_grid = self.dF_normalization_func(z, τ)
+
+            expost_markup_func = lambda ρ: ρ / self.c
+
+            markup_expost = np.array([expost_markup_func(ρ) for ρ in ρ_grid])
+
+            # DM consumption share
+            q_share = self.n* self.Total_q_func(z, τ) / (self.Total_ρq_func(z, τ) + self.x_star)
+
+            # CM consumption share
+            x_share = self.n* self.x_star / (self.Total_ρq_func(z, τ) + self.x_star)
+
+            # normalized
+            nor_share = q_share / x_share
+
+            # dm_consumption_share * dm_markup + cm_consumption_share * cm_markup(=1, CM p=mc) 
+            # normalized by x_share to get consumption weighted markup
+            markup = np.trapz(nor_share * (markup_expost * pdf_grid), ρ_grid) + 1.0
+        else:
+            markup = 1.0
         return markup
     
     def DM_utility(self, z, τ):
         """
         DM utility 
         """        
-        ρ_grid = self.support_grid_func(z, τ)
-        
-        pdf_grid = self.dF_normalization_func(z, τ)
-        
-        em = self.α_1 + 2.0*self.α_2*( 1.0 - self.F_func(z, τ))
-        
-        dm_net_func = lambda ρ: self.u_DM(self.q_demand_func(ρ,z)) - self.cost_DM(self.q_demand_func(ρ,z))
-        
-        expost_utility_α1_α2 = np.array( [ dm_net_func(ρ) for ρ in ρ_grid] )
-        
-        utility = self.n*np.trapz(em * expost_utility_α1_α2 * pdf_grid, ρ_grid ) 
-                    
+        if τ>self.β-1.0:
+            ρ_grid = self.support_grid_func(z, τ)
+
+            pdf_grid = self.dF_normalization_func(z, τ)
+            
+            em = self.α_1 + 2.0*self.α_2*( 1.0 - self.F_func(z, τ))
+
+            dm_net_func = lambda ρ: self.u_DM(self.q_demand_func(ρ,z)) - self.cost_DM(self.q_demand_func(ρ,z))
+
+            expost_utility_α1_α2 = np.array( [ dm_net_func(ρ) for ρ in ρ_grid] )
+
+            utility = self.n*np.trapz(em * expost_utility_α1_α2 * pdf_grid, ρ_grid ) 
+        else:
+            qb_FR = z
+
+            utility = self.n*(self.α_1 + self.α_2) * ( self.u_DM(qb_FR)- self.cost_DM(qb_FR) ) 
         return utility    
     
     def DM_utility_delta(self, z, τ, delta):
         """
         DM utility change by delta
         """        
-        ρ_grid = self.support_grid_func(z, τ)
-        
-        pdf_grid = self.dF_normalization_func(z, τ)
-        
-        em = self.α_1 + 2.0*self.α_2*( 1.0 - self.F_func(z, τ))
-        
-        dm_net_func = lambda ρ: self.u_DM(self.q_demand_func(ρ,z)*delta) - self.cost_DM(self.q_demand_func(ρ,z))
-        
-        expost_utility_α1_α2 = np.array( [ dm_net_func(ρ) for ρ in ρ_grid] )
-        
-        utility = self.n*np.trapz( em * expost_utility_α1_α2 * pdf_grid, ρ_grid )
-                    
+        if τ>self.β-1.0:
+            ρ_grid = self.support_grid_func(z, τ)
+
+            pdf_grid = self.dF_normalization_func(z, τ)
+
+            em = self.α_1 + 2.0*self.α_2*( 1.0 - self.F_func(z, τ))
+
+            dm_net_func = lambda ρ: self.u_DM(self.q_demand_func(ρ,z)*delta) - self.cost_DM(self.q_demand_func(ρ,z))
+
+            expost_utility_α1_α2 = np.array( [ dm_net_func(ρ) for ρ in ρ_grid] )
+
+            utility = self.n*np.trapz( em * expost_utility_α1_α2 * pdf_grid, ρ_grid )
+        else:
+            qb_FR = z
+
+            utility = self.n*(self.α_1 + self.α_2) * ( self.u_DM(qb_FR*delta)- self.cost_DM(qb_FR) ) 
         return utility      
     
     def welfare_func(self, z, τ):
@@ -616,13 +631,13 @@ class hlmw_mod(object):
             #allocation under Friedman rule
             qb_FR = z
 
-            DM_segment = (self.α_1 + self.α_2) * ( self.u_DM(qb_FR) - self.cost_DM(qb_FR) )
+            DM_segment = self.n*(self.α_1 + self.α_2) * ( self.u_DM(qb_FR) - self.cost_DM(qb_FR) )
             
             labor_CM = self.x_star
             
             CM_segment = self.U_CM(self.x_star) - self.h(labor_CM)
             
-            lifetime_utility = self.n*discount*(DM_segment + CM_segment )
+            lifetime_utility =  discount*(DM_segment + CM_segment )
         
         else:
             
@@ -630,7 +645,7 @@ class hlmw_mod(object):
             
             labor_CM = self.x_star 
             
-            CM_segment = self.n*(self.U_CM(self.x_star) -  self.h(labor_CM))
+            CM_segment =  (self.U_CM(self.x_star) -  self.h(labor_CM))
             
             lifetime_utility = discount*(DM_segment + CM_segment )
             
@@ -646,13 +661,13 @@ class hlmw_mod(object):
             #allocation under Friedman rule
             qb_FR = z
 
-            DM_segment = (self.α_1 + self.α_2) * ( self.u_DM(qb_FR*delta) - self.cost_DM(qb_FR) )
+            DM_segment = self.n*(self.α_1 + self.α_2) * ( self.u_DM(qb_FR*delta) - self.cost_DM(qb_FR) )
             
             labor_CM = self.x_star
             
             CM_segment = self.U_CM(self.x_star*delta) - self.h(labor_CM)
             
-            lifetime_utility = self.n*discount*(DM_segment + CM_segment )
+            lifetime_utility =  discount*(DM_segment + CM_segment )
         
         else:
             
@@ -660,23 +675,13 @@ class hlmw_mod(object):
             
             labor_CM = self.x_star 
             
-            CM_segment = self.n*(self.U_CM(self.x_star*delta) -  self.h(labor_CM))
+            CM_segment =  (self.U_CM(self.x_star*delta) -  self.h(labor_CM))
             
             lifetime_utility = discount*(DM_segment + CM_segment )
             
         return lifetime_utility      
     
     def SME_stat_func(self, z, τ):
-        ρ_grid = self.support_grid_func(z, τ)
-        
-        pdf_normalized_grid = self.dF_normalization_func(z, τ)
-        
-        #calculate (posted) price dispersion
-        price_mean = np.trapz(ρ_grid * pdf_normalized_grid, ρ_grid)
-        y_1 = pdf_normalized_grid * ( (ρ_grid  - price_mean)**2.0 )
-        price_sd = np.sqrt( np.trapz(y_1, ρ_grid) )
-        price_cv = price_sd / price_mean    
-        
         ## calculate aggregate markup
         Y = self.x_star + self.Total_q_func(z, τ)
         
@@ -686,15 +691,36 @@ class hlmw_mod(object):
         
         nor_share = DM_share / CM_share
         
-        markup_deviation = ρ_grid / self.c  
+        if τ>self.β-1.0:
         
-        markup_mean = self.markup_func(z, τ) 
-        
-        y_2 =  pdf_normalized_grid * ( (markup_deviation - markup_mean)**2.0 ) * (nor_share**2.0)  + 0.0 # CM_dispersion = 0
-        
-        markup_sd = np.sqrt( np.trapz(y_2, ρ_grid) ) 
-        
-        markup_cv = markup_sd / markup_mean
+            ρ_grid = self.support_grid_func(z, τ)
+
+            pdf_normalized_grid = self.dF_normalization_func(z, τ)
+
+            #calculate (posted) price dispersion
+            price_mean = np.trapz(ρ_grid * pdf_normalized_grid, ρ_grid)
+            y_1 = pdf_normalized_grid * ( (ρ_grid  - price_mean)**2.0 )
+            price_sd = np.sqrt( np.trapz(y_1, ρ_grid) )
+            price_cv = price_sd / price_mean    
+
+
+
+            markup_deviation = ρ_grid / self.c  
+
+            markup_mean = self.markup_func(z, τ) 
+
+            y_2 =  pdf_normalized_grid * ( (markup_deviation - markup_mean)**2.0 ) * (nor_share**2.0)  + 0.0 # CM_dispersion = 0
+
+            markup_sd = np.sqrt( np.trapz(y_2, ρ_grid) ) 
+
+            markup_cv = markup_sd / markup_mean
+        else:
+            price_mean = self.c
+            price_sd = 0.0
+            price_cv = 0.0
+            markup_mean = 1.0
+            markup_sd = 0.0
+            markup_cv = 0.0
 
         mpy = z / Y
         
