@@ -18,7 +18,7 @@ Dependencies:
 ### Stationary monetary equilibrium 
 * `sme_example.ipynb` 
 * `sme_welfare_decompose.ipynb`
-* This two files generate figures shown in **Section 3** of the paper
+* This two files generate figures shown in the paper
 
 ### Calibration
 * `calibration.ipynb`
